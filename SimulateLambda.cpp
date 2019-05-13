@@ -58,8 +58,8 @@ TLorentzVector RotationTransform(TLorentzVector Lambda, TLorentzVector Daughter)
     TRotation rotMatrix;
     TRotation r1;
     TRotation r2;
-    r1.RotateZ(-V0Phi);
-    r2.RotateY(V0Theta);
+    r2.RotateZ(V0Phi);
+    r1.RotateY(V0Theta);
     rotMatrix = r2 * r1;
     
     TVector3 rotatedDaughter3;
@@ -135,8 +135,8 @@ void SimulateLambda() {
             TLorentzVector PionInRot = RotationTransform(LambdaInLab, PionInLambda);
             TLorentzVector ProtonInRot = RotationTransform(LambdaInLab, ProtonInLambda);
             
-            cout<< PionInRot.Phi() << ", " << PionInRot.Theta() << endl;
-            cout<< LambdaInLab.Phi() << ", " << LambdaInLab.Theta() << endl;
+            //cout<< PionInRot.Phi() << ", " << PionInRot.Theta() << endl;
+            //cout<< LambdaInLab.Phi() << ", " << LambdaInLab.Theta() << endl;
             
             TLorentzVector PionInLab = LorentzTransform(LambdaInLab, PionInRot);
             TLorentzVector ProtonInLab = LorentzTransform(LambdaInLab, ProtonInRot);
