@@ -69,11 +69,10 @@ TLorentzVector RotationTransform(TLorentzVector Lambda, TLorentzVector Daughter)
 }//End RotateCoordinates Function
 
 //Transform daughter particles into lab frame
-TLorentzVector LorentzTransform(TLorentzVector Lambda, TLorentzVector rotatedDaughter) {
+TLorentzVector LorentzTransform(TLorentzVector Lambda, TLorentzVector Daughter) {
     TVector3 LambdaBoostVector = Lambda.BoostVector();
-    rotatedDaughter.Boost(LambdaBoostVector);
-    TLorentzVector boostedDaughter = rotatedDaughter;
-    return boostedDaughter;
+    Daughter.Boost(LambdaBoostVector);
+    return Daughter;
 }//End LorentzTransform Function
 
 //Simulate the effect of detector resolution on measurments of daughter momenta
@@ -135,9 +134,6 @@ void SimulateLambda() {
             TLorentzVector PionInRot = RotationTransform(LambdaInLab, PionInLambda);
             TLorentzVector ProtonInRot = RotationTransform(LambdaInLab, ProtonInLambda);
             
-            //cout<< PionInRot.Phi() << ", " << PionInRot.Theta() << endl;
-            //cout<< LambdaInLab.Phi() << ", " << LambdaInLab.Theta() << endl;
-            
             TLorentzVector PionInLab = LorentzTransform(LambdaInLab, PionInRot);
             TLorentzVector ProtonInLab = LorentzTransform(LambdaInLab, ProtonInRot);
             
@@ -174,7 +170,7 @@ void SimulateLambda() {
                 
                 double V0E = TMath::Sqrt((prE + piE)*(prE + piE));
                 
-                TVector3 V03 ((prPx + prPx), (prPy + prPy), (prPz + prPz));
+                TVector3 V03 ((prPx + piPx), (prPy + piPy), (prPz + piPz));
                 double V0M = TMath::Sqrt(V0E*V0E - V03.Mag2());
                 hV0M->Fill(V0M);
                 
