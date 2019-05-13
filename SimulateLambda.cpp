@@ -1,5 +1,4 @@
 //To be implimented inside the ROOT framework (available for free from CERN)
-//
 
 #define V0MASS 1115.683
 #define PIMASS 139.57018
@@ -81,24 +80,21 @@ TLorentzVector SimiulateResolution (string includeRes, TRandom3 random, TLorentz
         DaughterInLab.SetPx(random.Gaus(DaughterInLab.Px(), .03*DaughterInLab.Px()));
         DaughterInLab.SetPy(random.Gaus(DaughterInLab.Py(), .03*DaughterInLab.Py()));
     }
-    
     return DaughterInLab;
 }//End SimulateResolution Function
 
 //Simulate a measurement of a daughter track by storing it in an array (if it passes the cuts)
-TObjArray SimulateMeasurement(string includeCuts, int momentumCuts, TLorentzVector DaughterInLab, TObjArray daughterTracks) {
+void SimulateMeasurement(string includeCuts, int momentumCuts, TLorentzVector DaughterInLab, TObjArray& daughterTracks) {
     //Cuts simulating the detector's geometry and particle kinematics
-    if (TMath::Abs(DaughterInLab.Eta()) > 0.5) return daughterTracks;
-    if (DaughterInLab.Pt() < momentumCuts) return daughterTracks;
+    if ((includeCuts == "y" && TMath::Abs(DaughterInLab.Eta()) > 0.5)) return;
+    if ((includeCuts == "y" && DaughterInLab.Pt() < momentumCuts)) return;
     daughterTracks.Add(&DaughterInLab);
-    return daughterTracks;
 }//End SimulateMeasurement Function
 
 double GetHelicity(TLorentzVector Lambda, TLorentzVector Proton) {
     double Helicity = Lambda.Vect()*Proton.Vect();
     return Helicity;
 }
-
 
 void SimulateLambda() {
     //Initialize histograms
@@ -148,8 +144,9 @@ void SimulateLambda() {
             SimiulateResolution(includeRes, r, PionInLab);
             SimiulateResolution(includeRes, r, ProtonInLab);
             
-            piTracks = SimulateMeasurement(includeCuts, momentumCuts, PionInLab, piTracks);
-            prTracks = SimulateMeasurement(includeCuts, momentumCuts, ProtonInLab, prTracks);
+            SimulateMeasurement(includeCuts, momentumCuts, PionInLab, piTracks);
+            SimulateMeasurement(includeCuts, momentumCuts, ProtonInLab, prTracks);
+            
         }//End Lambda/Pion/Proton Creation Loop
         
         //Loop over Proton-Pion pairs in one event
@@ -168,6 +165,7 @@ void SimulateLambda() {
                 double piPy = ((TLorentzVector*) piTracks.At(j))->Py();
                 double piPz = ((TLorentzVector*) piTracks.At(j))->Pz();
                 double piE = ((TLorentzVector*) piTracks.At(j))->E();
+                
                 double V0E = TMath::Sqrt((prE + piE)*(prE + piE));
                 
                 TVector3 V03 ((prPx + prPx), (prPy + prPy), (prPz + prPz));
