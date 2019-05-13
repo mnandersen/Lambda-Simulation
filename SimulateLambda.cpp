@@ -6,6 +6,9 @@
 double trueRight = 0;
 double trueLeft  = 0;
 
+TLorentzVector pionArray[10];
+TLorentzVector protonArray[10];
+
 //FUNCTION DEFINTIONS
 //Generate Lambda 4-momentum in lab frame
 TLorentzVector CreateLambda(TRandom3 random) {
@@ -85,11 +88,11 @@ TLorentzVector SimiulateResolution (string includeRes, TRandom3 random, TLorentz
 }//End SimulateResolution Function
 
 //Simulate a measurement of a daughter track by storing it in an array (if it passes the cuts)
-void SimulateMeasurement(string includeCuts, int momentumCuts, TLorentzVector DaughterInLab, TObjArray& daughterTracks) {
+void SimulateMeasurement(int index, string includeCuts, int momentumCuts, TLorentzVector DaughterInLab, TLorentzVector daughterArray[]) {
     //Cuts simulating the detector's geometry and particle kinematics
     if ((includeCuts == "y" && TMath::Abs(DaughterInLab.Eta()) > 0.5)) return;
     if ((includeCuts == "y" && DaughterInLab.Pt() < momentumCuts)) return;
-    daughterTracks.Add(&DaughterInLab);
+    daughterArray[index] = DaughterInLab;
 }//End SimulateMeasurement Function
 
 double GetHelicity(TLorentzVector Lambda, TLorentzVector Proton) {
@@ -122,8 +125,6 @@ void SimulateLambda() {
     
     //Simulate Events
     for (int event=0; event<10000; event++) {
-        TObjArray piTracks;
-        TObjArray prTracks;
         //Generate 10 Lambdas/Pions/Protons for each event
         for (int V0Num=0; V0Num<10; V0Num++) {
             r.SetSeed();
@@ -146,27 +147,23 @@ void SimulateLambda() {
             SimiulateResolution(includeRes, r, PionInLab);
             SimiulateResolution(includeRes, r, ProtonInLab);
             
-            SimulateMeasurement(includeCuts, momentumCuts, PionInLab, piTracks);
-            SimulateMeasurement(includeCuts, momentumCuts, ProtonInLab, prTracks);
-            
+            SimulateMeasurement(V0Num, includeCuts, momentumCuts, PionInLab, pionArray);
+            SimulateMeasurement(V0Num, includeCuts, momentumCuts, ProtonInLab, protonArray);
         }//End Lambda/Pion/Proton Creation Loop
         
         //Loop over Proton-Pion pairs in one event
-        int prNum = prTracks.GetEntries();
-        int piNum = piTracks.GetEntries();
-        for (int i=0; i<prNum; i++) {
-            for (int j=0; j<piNum; j++) {
-
+        for (int i=0; i<10; i++) {
+            for (int j=0; j<10; j++) {
                 //Calculate invariant mass
-                double prPx = ((TLorentzVector*) prTracks.At(i))->Px();
-                double prPy = ((TLorentzVector*) prTracks.At(i))->Py();
-                double prPz = ((TLorentzVector*) prTracks.At(i))->Pz();
-                double prE = ((TLorentzVector*) prTracks.At(i))->E();
+                double prPx = protonArray[i].Px();
+                double prPy = protonArray[i].Py();
+                double prPz = protonArray[i].Pz();;
+                double prE = protonArray[i].E();;
                 
-                double piPx = ((TLorentzVector*) piTracks.At(j))->Px();
-                double piPy = ((TLorentzVector*) piTracks.At(j))->Py();
-                double piPz = ((TLorentzVector*) piTracks.At(j))->Pz();
-                double piE = ((TLorentzVector*) piTracks.At(j))->E();
+                double piPx = pionArray[j].Px();
+                double piPy = pionArray[j].Py();
+                double piPz = pionArray[j].Pz();
+                double piE = pionArray[j].E();
                 
                 double V0E = TMath::Sqrt((prE + piE)*(prE + piE));
                 
