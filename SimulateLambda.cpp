@@ -1,5 +1,4 @@
 //To be implimented inside the ROOT framework (available for free from CERN)
-
 #define V0MASS 1115.683
 #define PIMASS 139.57018
 #define PRMASS 938.27231
@@ -41,7 +40,7 @@ TLorentzVector CreatePion(TRandom3 random) {
 }//End CreatePion Function
 
 //Generate Proton 4-Momenta in lambda frame
-TLorentzVector CreateProton(TRandom3 random, TLorentzVector Pion) {
+TLorentzVector CreateProton(TLorentzVector Pion) {
     double Px = -Pion.Px();
     double Py = -Pion.Py();
     double Pz = -Pion.Pz();
@@ -57,8 +56,11 @@ TLorentzVector RotationTransform(TLorentzVector Lambda, TLorentzVector Daughter)
     double V0Phi = Lambda.Phi();
     
     TRotation rotMatrix;
-    rotMatrix.RotateZ(-V0Phi);
-    rotMatrix.RotateY(-V0Theta);
+    TRotation r1;
+    TRotation r2;
+    r1.RotateZ(-V0Phi);
+    r2.RotateY(V0Theta);
+    rotMatrix = r2 * r1;
     
     TVector3 rotatedDaughter3;
     rotatedDaughter3 = rotMatrix * (Daughter.Vect());
@@ -103,7 +105,7 @@ void SimulateLambda() {
 
     //Random number generator
     TRandom3 r;
-    r.SetSeed();
+    
     TF1 ICos = TF1("ICos", "1 - (.64*x)", -1, 1);
     
     string includeRes;
@@ -125,12 +127,16 @@ void SimulateLambda() {
         TObjArray prTracks;
         //Generate 10 Lambdas/Pions/Protons for each event
         for (int V0Num=0; V0Num<10; V0Num++) {
+            r.SetSeed();
             TLorentzVector LambdaInLab = CreateLambda(r);
             TLorentzVector PionInLambda = CreatePion(r);
-            TLorentzVector ProtonInLambda = CreateProton(r, PionInLambda);
+            TLorentzVector ProtonInLambda = CreateProton(PionInLambda);
             
             TLorentzVector PionInRot = RotationTransform(LambdaInLab, PionInLambda);
             TLorentzVector ProtonInRot = RotationTransform(LambdaInLab, ProtonInLambda);
+            
+            cout<< PionInRot.Phi() << ", " << PionInRot.Theta() << endl;
+            cout<< LambdaInLab.Phi() << ", " << LambdaInLab.Theta() << endl;
             
             TLorentzVector PionInLab = LorentzTransform(LambdaInLab, PionInRot);
             TLorentzVector ProtonInLab = LorentzTransform(LambdaInLab, ProtonInRot);
