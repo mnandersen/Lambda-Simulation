@@ -1,13 +1,17 @@
 //To be implimented inside the ROOT framework (available for free from CERN)
+
 #define V0MASS 1115.683
 #define PIMASS 139.57018
 #define PRMASS 938.27231
 
+//GLOBAL DECLARATIONS
 double trueRight = 0;
 double trueLeft  = 0;
 
 TLorentzVector pionArray[10];
 TLorentzVector protonArray[10];
+
+TRandom3 r;
 
 //FUNCTION DEFINTIONS
 //Generate Lambda 4-momentum in lab frame
@@ -23,14 +27,16 @@ TLorentzVector CreateLambda(TRandom3 random) {
     
     TLorentzVector Lambda (Px, Py, Pz, E);
     return Lambda;
-}//End CreateLambda Function
+}
 
 //Generate Pion 4-Momenta in lambda frame
 TLorentzVector CreatePion(TRandom3 random) {
+    TF1 ICos = TF1("ICos", "1 - (.64*x)", -1, 1);
+    
     double P = TMath::Sqrt((V0MASS*V0MASS - (PIMASS + PRMASS)*(PIMASS + PRMASS))*
                            (V0MASS*V0MASS - (PIMASS - PRMASS)*(PIMASS - PRMASS)))/(2*V0MASS);
     double Phi = random.Uniform(0, 2*3.14159);
-    double Theta = 0;//(TMath::Pi() - TMath::ACos(ICos.GetRandom()));
+    double Theta = (TMath::Pi() - TMath::ACos(ICos.GetRandom()));
     double E = TMath::Sqrt((P)*(P) + (PIMASS)*(PIMASS));
     
     double Pz = P*cos(Theta);
@@ -40,7 +46,7 @@ TLorentzVector CreatePion(TRandom3 random) {
     
     TLorentzVector Pion(Px, Py, Pz, E);
     return Pion;
-}//End CreatePion Function
+}
 
 //Generate Proton 4-Momenta in lambda frame
 TLorentzVector CreateProton(TLorentzVector Pion) {
@@ -51,7 +57,7 @@ TLorentzVector CreateProton(TLorentzVector Pion) {
     
     TLorentzVector Proton (Px, Py, Pz, E);
     return Proton;
-}//End CreateProton Function
+}
 
 //Rotate Lambda Frame to align with Lab Frame; return daughter momenta in new frame
 TLorentzVector RotationTransform(TLorentzVector Lambda, TLorentzVector Daughter) {
@@ -69,14 +75,14 @@ TLorentzVector RotationTransform(TLorentzVector Lambda, TLorentzVector Daughter)
     rotatedDaughter3 = rotMatrix * (Daughter.Vect());
     TLorentzVector rotatedDaughter (rotatedDaughter3, Daughter.E());
     return rotatedDaughter;
-}//End RotateCoordinates Function
+}
 
 //Transform daughter particles into lab frame
 TLorentzVector LorentzTransform(TLorentzVector Lambda, TLorentzVector Daughter) {
     TVector3 LambdaBoostVector = Lambda.BoostVector();
     Daughter.Boost(LambdaBoostVector);
     return Daughter;
-}//End LorentzTransform Function
+}
 
 //Simulate the effect of detector resolution on measurments of daughter momenta
 TLorentzVector SimiulateResolution (string includeRes, TRandom3 random, TLorentzVector DaughterInLab) {
@@ -85,7 +91,7 @@ TLorentzVector SimiulateResolution (string includeRes, TRandom3 random, TLorentz
         DaughterInLab.SetPy(random.Gaus(DaughterInLab.Py(), .03*DaughterInLab.Py()));
     }
     return DaughterInLab;
-}//End SimulateResolution Function
+}
 
 //Simulate a measurement of a daughter track by storing it in an array (if it passes the cuts)
 void SimulateMeasurement(int index, string includeCuts, int momentumCuts, TLorentzVector DaughterInLab, TLorentzVector daughterArray[]) {
@@ -93,8 +99,9 @@ void SimulateMeasurement(int index, string includeCuts, int momentumCuts, TLoren
     if ((includeCuts == "y" && TMath::Abs(DaughterInLab.Eta()) > 0.5)) return;
     if ((includeCuts == "y" && DaughterInLab.Pt() < momentumCuts)) return;
     daughterArray[index] = DaughterInLab;
-}//End SimulateMeasurement Function
+}
 
+//Simple Helicity calculator
 double GetHelicity(TLorentzVector Lambda, TLorentzVector Proton) {
     double Helicity = Lambda.Vect()*Proton.Vect();
     return Helicity;
@@ -104,11 +111,6 @@ void SimulateLambda() {
     //Initialize histograms
     TFile *hOutput = new TFile("simulationHistos.root", "recreate");
     TH1F *hV0M   = new TH1F("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 500, 1000, 1600);
-
-    //Random number generator
-    TRandom3 r;
-    
-    TF1 ICos = TF1("ICos", "1 - (.64*x)", -1, 1);
     
     string includeRes;
     cout << "Include Resolution (y/n)? ";
