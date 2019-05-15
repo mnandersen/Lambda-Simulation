@@ -5,6 +5,10 @@
 #define PRMASS 938.27231
 
 //GLOBAL DECLARATIONS
+TFile *hOutput = new TFile("simulationHistos.root", "recreate");
+TH1F *hV0M   = new TH1F("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 500, 1000, 1600);
+//TH1F *hTheta   = new TH1F("hTheta", "Theta Dist.; Theta; Counts", 500, 0, 3.15);
+
 double trueRight = 0;
 double trueLeft  = 0;
 
@@ -36,7 +40,7 @@ TLorentzVector CreatePion(TRandom3 random) {
     double P = TMath::Sqrt((V0MASS*V0MASS - (PIMASS + PRMASS)*(PIMASS + PRMASS))*
                            (V0MASS*V0MASS - (PIMASS - PRMASS)*(PIMASS - PRMASS)))/(2*V0MASS);
     double Phi = random.Uniform(0, 2*3.14159);
-    double Theta = (TMath::Pi() - TMath::ACos(ICos.GetRandom()));
+    double Theta = 0;//TMath::ACos(ICos.GetRandom());
     double E = TMath::Sqrt((P)*(P) + (PIMASS)*(PIMASS));
     
     double Pz = P*cos(Theta);
@@ -64,15 +68,23 @@ TLorentzVector RotationTransform(TLorentzVector Lambda, TLorentzVector Daughter)
     double V0Theta = Lambda.Theta();
     double V0Phi = Lambda.Phi();
     
-    TRotation rotMatrix;
+    TVector3 Lambda3 = Lambda.Vect();
+    Lambda3.RotateZ(-V0Phi);
+    Lambda3.RotateY(-V0Theta);
+    
+    /*TRotation rotMatrix;
     TRotation r1;
     TRotation r2;
-    r2.RotateZ(V0Phi);
-    r1.RotateY(V0Theta);
-    rotMatrix = r2 * r1;
+    r1.RotateZ(-V0Phi);
+    r2.RotateY(-V0Theta);
+    rotMatrix = r1 * r2;*/
+
+    //cout << Lambda3.X() << ", " << Lambda3.Y() << ", " << Lambda3.Z() << endl;
     
-    TVector3 rotatedDaughter3;
-    rotatedDaughter3 = rotMatrix * (Daughter.Vect());
+    TVector3 rotatedDaughter3 = Daughter.Vect();
+    rotatedDaughter3.RotateZ(-V0Phi);
+    rotatedDaughter3.RotateY(-V0Theta);
+    //rotatedDaughter3 = rotMatrix * (Daughter.Vect());
     TLorentzVector rotatedDaughter (rotatedDaughter3, Daughter.E());
     return rotatedDaughter;
 }
@@ -108,10 +120,6 @@ double GetHelicity(TLorentzVector LambdaInLab, TLorentzVector ProtonInLambda) {
 }
 
 void SimulateLambda() {
-    //Initialize histograms
-    TFile *hOutput = new TFile("simulationHistos.root", "recreate");
-    TH1F *hV0M   = new TH1F("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 500, 1000, 1600);
-    
     string includeRes;
     cout << "Include Resolution (y/n)? ";
     cin >> includeRes;
@@ -133,6 +141,10 @@ void SimulateLambda() {
             TLorentzVector LambdaInLab = CreateLambda(r);
             TLorentzVector PionInLambda = CreatePion(r);
             TLorentzVector ProtonInLambda = CreateProton(PionInLambda);
+            //cout << PionInLambda.Theta() << endl;
+            //cout << ProtonInLambda.Theta() << endl;
+            
+            //hTheta->Fill(ProtonInLambda.Theta());
             
             TLorentzVector PionInRot = RotationTransform(LambdaInLab, PionInLambda);
             TLorentzVector ProtonInRot = RotationTransform(LambdaInLab, ProtonInLambda);
@@ -177,6 +189,7 @@ void SimulateLambda() {
          }//End proton track loop
     }//End Event Loop
     
+    //hTheta->Write();
     hV0M->Write();
     hOutput->Close();
     
