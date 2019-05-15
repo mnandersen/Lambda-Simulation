@@ -5,6 +5,10 @@
 #define PRMASS 938.27231
 
 //GLOBAL DECLARATIONS
+TFile *hOutput = new TFile("simulationHistos.root", "recreate");
+TH1F *hV0M   = new TH1F("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 500, 1000, 1600);
+TH1F *hTheta   = new TH1F("hTheta", "Theta Dist.; Theta; Counts", 250, 0, 3.15);
+
 double trueRight = 0;
 double trueLeft  = 0;
 
@@ -36,7 +40,7 @@ TLorentzVector CreatePion(TRandom3 random) {
     double P = TMath::Sqrt((V0MASS*V0MASS - (PIMASS + PRMASS)*(PIMASS + PRMASS))*
                            (V0MASS*V0MASS - (PIMASS - PRMASS)*(PIMASS - PRMASS)))/(2*V0MASS);
     double Phi = random.Uniform(0, 2*3.14159);
-    double Theta = (TMath::Pi() - TMath::ACos(ICos.GetRandom()));
+    double Theta = TMath::ACos(ICos.GetRandom());
     double E = TMath::Sqrt((P)*(P) + (PIMASS)*(PIMASS));
     
     double Pz = P*cos(Theta);
@@ -64,15 +68,10 @@ TLorentzVector RotationTransform(TLorentzVector Lambda, TLorentzVector Daughter)
     double V0Theta = Lambda.Theta();
     double V0Phi = Lambda.Phi();
     
-    TRotation rotMatrix;
-    TRotation r1;
-    TRotation r2;
-    r2.RotateZ(V0Phi);
-    r1.RotateY(V0Theta);
-    rotMatrix = r2 * r1;
+    TVector3 rotatedDaughter3 = Daughter.Vect();
+    rotatedDaughter3.RotateZ(-V0Phi);
+    rotatedDaughter3.RotateY(-V0Theta);
     
-    TVector3 rotatedDaughter3;
-    rotatedDaughter3 = rotMatrix * (Daughter.Vect());
     TLorentzVector rotatedDaughter (rotatedDaughter3, Daughter.E());
     return rotatedDaughter;
 }
@@ -108,10 +107,6 @@ double GetHelicity(TLorentzVector Lambda, TLorentzVector Proton) {
 }
 
 void SimulateLambda() {
-    //Initialize histograms
-    TFile *hOutput = new TFile("simulationHistos.root", "recreate");
-    TH1F *hV0M   = new TH1F("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 500, 1000, 1600);
-    
     string includeRes;
     cout << "Include Resolution (y/n)? ";
     cin >> includeRes;
@@ -126,13 +121,14 @@ void SimulateLambda() {
     }
     
     //Simulate Events
-    for (int event=0; event<10000; event++) {
+    for (int event=0; event<1000; event++) {
         //Generate 10 Lambdas/Pions/Protons for each event
         for (int V0Num=0; V0Num<10; V0Num++) {
             r.SetSeed();
             TLorentzVector LambdaInLab = CreateLambda(r);
             TLorentzVector PionInLambda = CreatePion(r);
             TLorentzVector ProtonInLambda = CreateProton(PionInLambda);
+            hTheta->Fill(ProtonInLambda.Theta());
             
             TLorentzVector PionInRot = RotationTransform(LambdaInLab, PionInLambda);
             TLorentzVector ProtonInRot = RotationTransform(LambdaInLab, ProtonInLambda);
@@ -177,6 +173,7 @@ void SimulateLambda() {
         }//End proton track loop
     }//End Event Loop
     
+    hTheta->Write();
     hV0M->Write();
     hOutput->Close();
     
