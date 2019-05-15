@@ -102,8 +102,8 @@ void SimulateMeasurement(int index, string includeCuts, int momentumCuts, TLoren
 }
 
 //Simple Helicity calculator
-double GetHelicity(TLorentzVector Lambda, TLorentzVector Proton) {
-    double Helicity = Lambda.Vect()*Proton.Vect();
+double GetHelicity(TLorentzVector LambdaInLab, TLorentzVector ProtonInLambda) {
+    double Helicity = LambdaInLab.Vect()*ProtonInLambda.Vect();
     return Helicity;
 }
 
@@ -126,7 +126,7 @@ void SimulateLambda() {
     }
     
     //Simulate Events
-    for (int event=0; event<10000; event++) {
+    for (int event=0; event<1000; event++) {
         //Generate 10 Lambdas/Pions/Protons for each event
         for (int V0Num=0; V0Num<10; V0Num++) {
             r.SetSeed();
@@ -141,7 +141,7 @@ void SimulateLambda() {
             TLorentzVector ProtonInLab = LorentzTransform(LambdaInLab, ProtonInRot);
             
             //Determine True Helicity
-            double trueHelicity = GetHelicity(LambdaInLab, ProtonInRot);
+            double trueHelicity = GetHelicity(LambdaInLab, ProtonInLambda);
             if (trueHelicity > 0) trueRight++;
             if (trueHelicity < 0) trueLeft++;
             
