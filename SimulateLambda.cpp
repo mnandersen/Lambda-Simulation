@@ -11,7 +11,10 @@ TH1F *hTheta   = new TH1F("hTheta", "Theta Dist.; Theta; Counts", 250, 0, 3.15);
 
 double trueRight = 0;
 double trueLeft  = 0;
-double nLambdas  = 0;
+double leftH      = 0;
+double rightH     = 0;
+int trueNLambdas = 0;
+int nLambdas     = 0;
 
 TLorentzVector pionArray[10];
 TLorentzVector protonArray[10];
@@ -127,6 +130,7 @@ void SimulateLambda() {
         //Generate 10 Lambdas/Pions/Protons for each event
         for (int V0Num=0; V0Num<10; V0Num++) {
             r.SetSeed();
+            trueNLambdas++;
             TLorentzVector LambdaInLab = CreateLambda(r);
             TLorentzVector PionInLambda = CreatePion(r);
             TLorentzVector ProtonInLambda = CreateProton(PionInLambda);
@@ -180,11 +184,23 @@ void SimulateLambda() {
                 
                 TVector3 V03 ((prPx + piPx), (prPy + piPy), (prPz + piPz));
                 double V0M = TMath::Sqrt(V0E*V0E - V03.Mag2());
+                
                 hV0M->Fill(V0M);
                 
                 //Calculate Helicity for "reconstructed" Lambda tracks
-                if ((V0M <= (V0MASS + 2.50)) || (V0M >= V0MASS)) {
+                if ((V0M < (V0MASS + 2.5)) && (V0M >= V0MASS)) {
                     nLambdas++;
+                    TLorentzVector LambdaRecons;
+                    LambdaRecons.SetVect(V03);
+                    LambdaRecons.SetE(V0E);
+                    
+                    TLorentzVector Proton;
+                    Proton.SetPxPyPzE(prPx, prPy, prPz, prE);
+                    Proton.Boost(-(LambdaRecons.BoostVector()));
+            
+                    double helicity = GetHelicity(LambdaRecons, Proton);
+                    if (helicity > 0) rightH++;
+                    if (helicity < 0) leftH++;
                 }
                 
             }//End pion track loop
@@ -196,16 +212,28 @@ void SimulateLambda() {
     hOutput->Close();
     
     //Calculate Helicity results
-    double HR = trueLeft/trueRight;
-    double uHR = TMath::Sqrt((1/trueRight)*(TMath::Sqrt(trueLeft))*(1/trueRight)*(TMath::Sqrt(trueLeft)) + (-trueLeft/(trueRight*trueRight))*(TMath::Sqrt(trueRight))*(-trueLeft/(trueRight*trueRight))*(TMath::Sqrt(trueRight)));
+    double trueHR = trueLeft/trueRight;
+    double trueuHR = TMath::Sqrt((1/trueRight)*(TMath::Sqrt(trueLeft))*(1/trueRight)*(TMath::Sqrt(trueLeft)) + (-trueLeft/(trueRight*trueRight))*(TMath::Sqrt(trueRight))*(-trueLeft/(trueRight*trueRight))*(TMath::Sqrt(trueRight)));
+    double HR = leftH/rightH;
+    double uHR = TMath::Sqrt((1/rightH)*(TMath::Sqrt(leftH))*(1/rightH)*(TMath::Sqrt(leftH)) + (-leftH/(rightH*rightH))*(TMath::Sqrt(rightH))*(-leftH/(rightH*rightH))*(TMath::Sqrt(rightH)));
     
     //Write results to file
     ofstream simulationResults;
     simulationResults.open("Simulation\ Results.txt");
-    simulationResults << "Number of Lambdas: "  << nLambdas  << endl;
+    simulationResults << "True Number of Lambdas: "  << trueNLambdas  << endl;
     simulationResults << "True #Left-Handed: "  << trueLeft  << endl;
     simulationResults << "True #Right-Handed: " << trueRight << endl;
     simulationResults << std::setprecision(3) << "True Helicity Ratio (Left/Right): ";
+    simulationResults << trueHR;
+    simulationResults << " ±";
+    simulationResults << std::setprecision(2) << trueuHR << endl;
+    
+    simulationResults << std::setprecision(6) << endl;
+    
+    simulationResults << "Number of 'Reconstructed' Lambdas: "  << nLambdas  << endl;
+    simulationResults << "#Left-Handed: "  << leftH << endl;
+    simulationResults << "#Right-Handed: " << rightH << endl;
+    simulationResults << std::setprecision(3) << "Helicity Ratio (Left/Right): ";
     simulationResults << HR;
     simulationResults << " ±";
     simulationResults << std::setprecision(2) << uHR << endl;
