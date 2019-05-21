@@ -6,11 +6,12 @@
 
 //GLOBAL DECLARATIONS
 TFile *hOutput = new TFile("simulationHistos.root", "recreate");
-TH1F *hV0M   = new TH1F("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 500, 1000, 1600);
+TH1F *hV0M   = new TH1F("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 72, 1060.683, 1240.683);
 TH1F *hTheta   = new TH1F("hTheta", "Theta Dist.; Theta; Counts", 250, 0, 3.15);
 
 double trueRight = 0;
 double trueLeft  = 0;
+double nLambdas  = 0;
 
 TLorentzVector pionArray[10];
 TLorentzVector protonArray[10];
@@ -106,6 +107,7 @@ double GetHelicity(TLorentzVector Lambda, TLorentzVector Proton) {
     return Helicity;
 }
 
+//MAIN FUNCTION
 void SimulateLambda() {
     string includeRes;
     cout << "Include Resolution (y/n)? ";
@@ -152,6 +154,17 @@ void SimulateLambda() {
         //Loop over Proton-Pion pairs in one event
         for (int i=0; i<10; i++) {
             for (int j=0; j<10; j++) {
+                
+                //Check for empty array elements
+                if ((protonArray[i].X() == 0 &&
+                     protonArray[i].Y() == 0 &&
+                     protonArray[i].Z() == 0 &&
+                     protonArray[i].T() == 0) ||
+                    (pionArray[j].X() == 0 &&
+                     pionArray[j].Y() == 0 &&
+                     pionArray[j].Z() == 0 &&
+                     pionArray[j].T() == 0)) continue;
+                
                 //Calculate invariant mass
                 double prPx = protonArray[i].Px();
                 double prPy = protonArray[i].Py();
@@ -169,6 +182,11 @@ void SimulateLambda() {
                 double V0M = TMath::Sqrt(V0E*V0E - V03.Mag2());
                 hV0M->Fill(V0M);
                 
+                //Calculate Helicity for "reconstructed" Lambda tracks
+                if ((V0M <= (V0MASS + 2.50)) || (V0M >= V0MASS)) {
+                    nLambdas++;
+                }
+                
             }//End pion track loop
         }//End proton track loop
     }//End Event Loop
@@ -184,6 +202,7 @@ void SimulateLambda() {
     //Write results to file
     ofstream simulationResults;
     simulationResults.open("Simulation\ Results.txt");
+    simulationResults << "Number of Lambdas: "  << nLambdas  << endl;
     simulationResults << "True #Left-Handed: "  << trueLeft  << endl;
     simulationResults << "True #Right-Handed: " << trueRight << endl;
     simulationResults << std::setprecision(3) << "True Helicity Ratio (Left/Right): ";
