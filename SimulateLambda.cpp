@@ -8,6 +8,7 @@
 TFile *hOutput = new TFile("simulationHistos.root", "recreate");
 TH1D *hV0M   = new TH1D("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 72, 1060.683, 1240.683);
 TH1D *hTheta   = new TH1D("hTheta", "Theta Dist.; Theta; Counts", 250, 0, 3.15);
+TH1D *hPrPt   = new TH1D("hPrPt", "Proton Transverse Momentum; Momentum; Counts", 15, 0, 300);
 
 double trueRight = 0;
 double trueLeft  = 0;
@@ -38,6 +39,7 @@ TLorentzVector CreateLambda(TRandom3 random) {
 }
 
 //Generate Pion 4-Momenta in lambda frame
+//Pion predominantly decays in the direction opposite Lambda spin
 TLorentzVector CreatePion(TRandom3 random) {
     TF1 ICos = TF1("ICos", "1 - (.64*x)", -1, 1);
     
@@ -200,13 +202,14 @@ void SimulateLambda() {
                     Proton.Boost(-(LambdaRecons.BoostVector()));
             
                     double helicity = GetHelicity(LambdaRecons, Proton);
-                    if (helicity > 0) rightH++;
-                    if (helicity < 0) leftH++;
+                    if (helicity > 0) {rightH++;}
+                    if (helicity < 0) {leftH++;hPrPt->Fill(protonArray[i].Pt());}
                 }//End Helicity calculations
             }//End pion track loop
         }//End proton track loop
     }//End Event Loop
     
+    hPrPt->Write();
     hTheta->Write();
     hV0M->Write();
     hOutput->Close();
