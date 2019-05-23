@@ -6,13 +6,13 @@
 
 //GLOBAL DECLARATIONS
 TFile *hOutput = new TFile("simulationHistos.root", "recreate");
-TH1F *hV0M   = new TH1F("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 72, 1060.683, 1240.683);
-TH1F *hTheta   = new TH1F("hTheta", "Theta Dist.; Theta; Counts", 250, 0, 3.15);
+TH1D *hV0M   = new TH1D("hV0M", "Invariant Mass;Mass [MeV/c2];Counts", 72, 1060.683, 1240.683);
+TH1D *hTheta   = new TH1D("hTheta", "Theta Dist.; Theta; Counts", 250, 0, 3.15);
 
 double trueRight = 0;
 double trueLeft  = 0;
-double leftH      = 0;
-double rightH     = 0;
+double leftH     = 0;
+double rightH    = 0;
 int trueNLambdas = 0;
 int nLambdas     = 0;
 
@@ -99,9 +99,11 @@ TLorentzVector SimiulateResolution (string includeRes, TRandom3 random, TLorentz
 //Simulate a measurement of a daughter track by storing it in an array (if it passes the cuts)
 void SimulateMeasurement(int index, string includeCuts, int momentumCuts, TLorentzVector DaughterInLab, TLorentzVector daughterArray[]) {
     //Cuts simulating the detector's geometry and particle kinematics
-    if ((includeCuts == "y" && TMath::Abs(DaughterInLab.Eta()) > 0.5)) return;
-    if ((includeCuts == "y" && DaughterInLab.Pt() < momentumCuts)) return;
-    daughterArray[index] = DaughterInLab;
+    if (includeCuts == "y" && ((TMath::Abs(DaughterInLab.Eta()) > 0.5) || (DaughterInLab.Pt() < TMath::Abs(momentumCuts)))) {
+        return;
+    } else {
+        daughterArray[index] = DaughterInLab;
+    }
 }
 
 //Simple Helicity calculator
@@ -180,15 +182,14 @@ void SimulateLambda() {
                 double piPz = pionArray[j].Pz();
                 double piE = pionArray[j].E();
                 
-                double V0E = TMath::Sqrt((prE + piE)*(prE + piE));
-                
                 TVector3 V03 ((prPx + piPx), (prPy + piPy), (prPz + piPz));
+                double V0E = TMath::Sqrt((prE + piE)*(prE + piE));
                 double V0M = TMath::Sqrt(V0E*V0E - V03.Mag2());
                 
                 hV0M->Fill(V0M);
                 
                 //Calculate Helicity for "reconstructed" Lambda tracks
-                if ((V0M < (V0MASS + 2.5)) && (V0M >= V0MASS)) {
+                if ((V0M < (V0MASS + 2.50)) && (V0M >= V0MASS)) {
                     nLambdas++;
                     TLorentzVector LambdaRecons;
                     LambdaRecons.SetVect(V03);
@@ -201,8 +202,7 @@ void SimulateLambda() {
                     double helicity = GetHelicity(LambdaRecons, Proton);
                     if (helicity > 0) rightH++;
                     if (helicity < 0) leftH++;
-                }
-                
+                }//End Helicity calculations
             }//End pion track loop
         }//End proton track loop
     }//End Event Loop
